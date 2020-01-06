@@ -1,0 +1,93 @@
+---
+title:  "NLP is Cool"
+date:   2019-07-08 22:17:56 -0400
+categories: nlp
+---
+
+This summer I learned a little about Natural Language Processing (NLP). I thought it was pretty cool (and still do), so I want to try and summarize what I've learned about this field, in addition to diving deeper into some specifics.
+
+Some quick reasons why I think NLP is cool:
+1. Deciphering human text is one of those things that is easy for us, but notoriously hard for machines.
+2. Text is information-dense. Much more than, say, the pixels of an image.
+3. Turing test.
+
+So, what can NLP be used for? It's not too hard to think of some big ones. Reading documents, extracting knowledge, discovering knowledge, using that knowledge to answer questions. These are all [ongoing fields of research][NLP progress].
+
+[NLP progress]: http://nlpprogress.com/
+
+Currently, NLP models can be roughly divided into two categories: broad coverage + shallow understanding, or narrow coverage + deep-er understanding. There's debate as to how much today's models [truly understand text][meaning v semantics]. It may be instructive to explore techniques from each side of this spectrum.
+
+[meaning v semantics]: https://medium.com/huggingface/learning-meaning-in-natural-language-processing-the-semantics-mega-thread-9c0332dfe28e
+![The NLP hierarchy](/images/NLP_hierarchy.png)
+
+Early NLP used rule-based models to parse text. [See SHRDLU][SHRDLU]. Problem was, they weren't very robust. The 80s and 90s saw statistical models that took advantage of broad patterns in text. This is useful for things like spam classifiers or document retrieval. But those methods disregard things like word order, and loses much of the fine-grained meaning of sentences. Nowadays we see a lot of machine learning models that leverage the huge amount of raw text data, and learn representations that can be fine-tuned on many specific tasks.
+
+[SHRDLU]: https://en.wikipedia.org/wiki/SHRDLU
+
+I'm going to dive into **information extraction**, which is still huge, but a smaller subset of NLP to talk about. It would be cool to have an algorithm that extracts useful information from text. The meaning of 'useful information', of course, depends a lot on the end goal. There are a couple of tasks that generalize pretty well across domains: 
+
+* **Named entities**: names of things like people, places, dates and times.
+* **Relationships**: between (usually two) things, like "is married to".
+* **Concepts**: more abstract, requires a dictionary definition. Could be part of a hierarchy, with synonyms, categories, etc.
+
+These aren't rigorous definitions, but you get the idea. Now I'll dive a little more into each of these tasks.
+
+# Named-entity recognition
+
+This is probably one of the more well known tasks, since it has strong support from big NLP libraries: NLTK, spaCy, and StanfordNLP. NER is usually the last step of a common feature extraction pipeline: tokenize, part-of-speech (POS) tags, dependency parsing, then NER. 
+
+![NLP pipeline](/images/NLP_pipeline.png)
+
+Each of these tasks is a research subject of its own. I'll give some quips about each of them.
+
+* **Tokenization**: splitting text into words, punctuation, etc. We can naively split by spaces/delete punctuation, but that misses tons of edge cases - contractions, hyphenated words, abbreviations (e.g N.Y.), money, etc. It's basically a bunch of rules.
+* **POS Tagging**: nontrivial because words may have different parts of speech in different context (e.g. "can"). It's not too bad for English. This was one of the first problems that graphical models were shown to excel at (Hidden Markov Models!). I hope to write more about them later.
+* **Dependency parsing**: relationships between tokens, according to a dependency grammar. It's stuff you learn in a computational linguistics class, but basically it's like "syntax." simplified examples: subject, object, root verb. Sentences can also have ambiguous parses, so we use statistical models again. [I still don't fully understand it][shift reduce].
+* **NER**: Lots of approaches. Conditional Random Fields (CRFs), another graphical model, do pretty well. RNNs edge them out by a bit. Currently NER models have basically human-level performance on general types of entities, but  they still don't generalize well to domain-specific text. 
+
+[shift reduce]: https://en.wikipedia.org/wiki/Shift-reduce_parser
+
+So understanding all of that requires some reading of graphical models and formal language theory. And we're far from extracting more complex knowledge. Bless the NLP gods who made these tools open-source for us plebians.
+
+# Relationship Extraction
+So on to relationship extraction. There's still a lot to be done in this field. I've seen two main approaches: 
+1. Supervised learning of sentences to a predefined set of relationship labels.
+2. Unsupervised methods. The best known of these is **Open Information Extraction**. Extracts relation triplets (subj-verb-obj) from the structure of the dependency parse. Useful in that you don't need to specify what you're looking for, but messier. 
+
+Note that with extracting relationship triples, we'll end up with a lot more than just named entities. A big problem here is cleaning and "canonicalizing" the elements.
+
+# Concepts and Beyond
+
+With entities and relationships, the ideal goal is to build a **knowledge base** of sorts, with which you could do things like run logical inference to deduce other knowledge, or even answer questions. Getting there requires some more steps. A big one is **entity linking** - resolving different mentions of an entity to a single database entry. This is closely related to **coreference resolution**, or finding all mentions that refer to the same entity. Coref is associated more with finding internal links (e.g pronouns), entity linking is external. You should also do some kind of linking with the relationships. 
+
+You'll probably want to organize your entities into some kind of semantic hierarchy - for example, we'd might want to know that oak is a type of tree. There are various terms for this - **semantic network**, **lexical database** or **ontology**. This is really hard, and I haven't seen anything that can totally automate this yet. Current networks are hand-built, like WordNet and ConceptNet, but they offer far from full coverage.
+
+![ConceptNet](/images/conceptnet.png)
+
+There are many flavors of knowledge base - DBpedia, Freebase, Cyc, NELL, and so on. I want to explain them more in-depth later. As complex as they are, I was surprised to learn that knowledge bases are essentially an **expert system**! Indeed, knowledge bases were a focal point of AI research in the 60s-80s. The point of languages like LISP and Prolog was to have the power to apply logical rules to these databases (forward and backward chaining). I had always just assumed expert systems were a bunch of trivial "if-then" statements. That's still true in a sense, but there's really so much more to it.
+
+As we know, expert systems fell out of favor, because they weren't robust. And the poster child for that failure has got to be [Cyc][Cyc]. Cyc was a project to develop a system with "commonsense knowledge". It was a big knowledge base that followed a big ontology, and was paired with a big inference engine. So what why wasn't it robust? I don't really know, but I hope to read more about it. Ian Goodfellow, in the introduction of his excellent book "Deep Learning", shows a [fun example][DL intro] (page 2). Another (opinionated) [article][Cyc rant]. Essentially it seems to boil down to: humans can't account for every edge case. So instead, should we... automate it?
+
+[Cyc]: https://en.wikipedia.org/wiki/Cyc
+[DL intro]: https://www.deeplearningbook.org/contents/intro.html
+[Cyc rant]: https://news.ycombinator.com/item?id=4216706
+
+<!-- 
+
+To add new posts, simply add a file in the `_posts` directory that follows the convention `YYYY-MM-DD-name-of-post.ext` and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.
+
+Jekyll also offers powerful support for code snippets:
+
+{% highlight ruby %}
+def print_hi(name)
+  puts "Hi, #{name}"
+end
+print_hi('Tom')
+#=> prints 'Hi, Tom' to STDOUT.
+{% endhighlight %}
+
+Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
+
+[jekyll-docs]: https://jekyllrb.com/docs/home
+[jekyll-gh]:   https://github.com/jekyll/jekyll
+[jekyll-talk]: https://talk.jekyllrb.com/ -->
